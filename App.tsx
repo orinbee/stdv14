@@ -40,29 +40,18 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState('home');
-
   const [isConfigWarningVisible, setIsConfigWarningVisible] = useState(!isFirebaseConfigured());
-
-  const setSafeError = (err: any) => {
-    if (!err) {
-      setError(null);
-      return;
-    }
-    const message = typeof err === 'string' ? err : (err.message || String(err));
-    setError(message);
-  };
 
   useEffect(() => {
     const initData = async () => {
       if (!isFirebaseConfigured()) {
-        setSafeError("Đang chạy ở chế độ Demo (Offline).");
+        setError("Firebase chưa được cấu hình. Ứng dụng đang chạy ở chế độ Demo (Offline).");
         loadMockData();
         return;
       }
 
       setIsLoading(true);
-      setSafeError(null);
+      setError(null);
       try {
         const cloudData = await fetchRecordsFromCloud();
         if (cloudData) {
@@ -72,7 +61,7 @@ const App: React.FC = () => {
           loadMockData();
         }
       } catch (err: any) {
-        setSafeError(err);
+        setError(err.message || "Có lỗi xảy ra khi kết nối với Firebase.");
         loadMockData();
       } finally {
         setIsLoading(false);
@@ -93,7 +82,7 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginUsername === 'admin' && loginPassword === 'admin') {
+    if (loginUsername === 'admin' && loginPassword === 'Tuqn@123') {
       setIsLoggedIn(true);
       setRole(UserRole.ADMIN);
       setShowLoginModal(false);
@@ -120,7 +109,7 @@ const App: React.FC = () => {
     }
 
     setIsLoading(true);
-    setSafeError(null);
+    setError(null);
 
     try {
       const data = await parseExcelFile(file);
@@ -134,7 +123,7 @@ const App: React.FC = () => {
       
     } catch (err: any) {
       console.error('Import error:', err);
-      setSafeError(err);
+      setError(err.message || 'Có lỗi xảy ra khi đồng bộ với Cloud.');
     } finally {
       setIsLoading(false);
       event.target.value = '';
@@ -144,33 +133,33 @@ const App: React.FC = () => {
   const filteredRecords = useMemo(() => {
     return records.filter(item => 
       Object.values(item).some(val => 
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+        val.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [records, searchTerm]);
 
   const totalPeople = filteredRecords.length;
-  const loggedInCount = filteredRecords.filter(r => String(r.status).toLowerCase().includes('đã đăng nhập')).length;
-  const notLoggedInCount = filteredRecords.filter(r => String(r.status).toLowerCase().includes('chưa đăng nhập')).length;
+  const loggedInCount = filteredRecords.filter(r => r.status.toLowerCase().includes('đã đăng nhập')).length;
+  const notLoggedInCount = filteredRecords.filter(r => r.status.toLowerCase().includes('chưa đăng nhập')).length;
   const unitCount = new Set(filteredRecords.map(r => r.unit)).size;
 
   return (
-    <div className="flex flex-col md:flex-row h-screen w-full bg-slate-100 overflow-hidden font-['Inter'] relative">
+    <div className="flex flex-col md:flex-row h-screen w-full bg-slate-50 overflow-hidden font-['Inter']">
       
-      {/* DESKTOP SIDEBAR */}
-      <aside className="hidden md:flex md:flex-col md:w-[100px] md:h-full bg-slate-900 text-white py-8 gap-8 items-center border-r border-slate-800 shrink-0">
-        <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20 mb-4">
+      {/* LEFT SIDEBAR */}
+      <aside className="w-full md:w-[10%] min-w-[110px] bg-slate-900 text-white flex flex-col items-center py-8 gap-8 border-r border-slate-800 z-10 transition-all">
+        <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/20">
           <Database className="w-6 h-6" />
         </div>
         
         <nav className="flex flex-col gap-6 w-full items-center">
-          <button className="p-3 text-blue-400 bg-blue-400/10 rounded-xl" title="Bảng điều khiển">
+          <button className="p-3 text-blue-400 bg-blue-400/10 rounded-lg group relative" title="Bảng điều khiển">
             <LayoutDashboard className="w-6 h-6" />
           </button>
-          <button className="p-3 text-slate-400 hover:text-white" title="Người dùng">
+          <button className="p-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all group relative" title="Người dùng">
             <Users className="w-6 h-6" />
           </button>
-          <button className="p-3 text-slate-400 hover:text-white">
+          <button className="p-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all group relative" title="Cài đặt">
             <Settings className="w-6 h-6" />
           </button>
         </nav>
@@ -178,157 +167,209 @@ const App: React.FC = () => {
         <div className="mt-auto flex flex-col items-center gap-6 w-full px-2 pb-4">
           <button 
             onClick={isLoggedIn ? handleLogout : () => setShowLoginModal(true)}
-            className={`flex flex-col items-center gap-1 group transition-all p-3 rounded-2xl w-full ${isLoggedIn ? 'bg-green-500/10 text-green-400 hover:bg-red-500/10 hover:text-red-400' : 'bg-slate-800 text-slate-500'}`}
+            className={`flex flex-col items-center gap-1 group transition-all p-3 rounded-xl w-full max-w-[70px] ${isLoggedIn ? 'bg-green-500/10 text-green-400 hover:bg-red-500/10 hover:text-red-400' : 'bg-slate-800 text-slate-500 hover:text-slate-200'}`}
           >
-            {isLoggedIn ? <ShieldCheck className="w-6 h-6" /> : <LogIn className="w-6 h-6" />}
-            <span className="text-[10px] font-bold uppercase tracking-tight">{isLoggedIn ? 'Admin' : 'Login'}</span>
-          </button>
-          
-          {isLoggedIn && role === UserRole.ADMIN && (
-            <label className="cursor-pointer p-4 bg-blue-600 hover:bg-blue-500 rounded-2xl transition-all shadow-lg shadow-blue-600/30 flex flex-col items-center justify-center">
-              <FileUp className="w-6 h-6" />
-              <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} disabled={isLoading} />
-              <span className="text-[9px] font-bold uppercase mt-1">Import</span>
-            </label>
-          )}
-        </div>
-      </aside>
-
-      {/* MOBILE BOTTOM NAVIGATION */}
-      <aside className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-slate-200 z-[100] px-4 shadow-[0_-8px_30px_rgb(0,0,0,0.08)]">
-        <div className="flex items-center justify-between h-full max-w-md mx-auto">
-          <button 
-            onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center gap-1.5 transition-colors px-4 py-2 rounded-2xl ${activeTab === 'home' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
-          >
-            <LayoutDashboard className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase">Trang chủ</span>
+            {isLoggedIn ? (
+              <>
+                <ShieldCheck className="w-6 h-6 group-hover:hidden" />
+                <LogOut className="w-6 h-6 hidden group-hover:block" />
+                <span className="text-[10px] font-bold uppercase tracking-tighter">Admin</span>
+              </>
+            ) : (
+              <>
+                <LogIn className="w-6 h-6" />
+                <span className="text-[10px] font-bold uppercase tracking-tighter">Login</span>
+              </>
+            )}
           </button>
 
-          {/* Center Action Button (Admin Only) */}
-          <div className="-mt-10">
+          <div className="relative group w-full flex justify-center">
             {isLoggedIn && role === UserRole.ADMIN ? (
-              <label className="flex flex-col items-center justify-center w-16 h-16 bg-blue-600 rounded-full shadow-xl shadow-blue-500/40 text-white active:scale-90 transition-transform cursor-pointer border-4 border-white">
-                <FileUp className="w-7 h-7" />
-                <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} disabled={isLoading} />
+              <label className="cursor-pointer p-4 bg-blue-600 hover:bg-blue-500 rounded-2xl transition-all shadow-lg shadow-blue-600/30 flex flex-col items-center gap-2 w-full max-w-[70px]">
+                <FileUp className="w-6 h-6" />
+                <input 
+                  type="file" 
+                  accept=".xlsx, .xls" 
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                  disabled={isLoading}
+                />
+                <span className="text-[9px] font-bold uppercase">Import</span>
               </label>
             ) : (
               <button 
                 onClick={() => setShowLoginModal(true)}
-                className="flex flex-col items-center justify-center w-16 h-16 bg-slate-900 rounded-full shadow-xl shadow-slate-900/40 text-white active:scale-90 transition-transform border-4 border-white"
+                className="p-4 bg-slate-800 text-slate-600 rounded-2xl cursor-pointer hover:bg-slate-700 hover:text-slate-400 flex flex-col items-center gap-2 w-full max-w-[70px] transition-all"
+                title="Đăng nhập Admin để tải lên"
               >
-                <Lock className="w-7 h-7" />
+                <Lock className="w-6 h-6" />
+                <span className="text-[9px] font-bold uppercase">Locked</span>
               </button>
             )}
           </div>
-
-          <button 
-            onClick={isLoggedIn ? handleLogout : () => setShowLoginModal(true)}
-            className={`flex flex-col items-center gap-1.5 transition-colors px-4 py-2 rounded-2xl ${isLoggedIn ? 'text-green-600' : 'text-slate-400'}`}
-          >
-            {isLoggedIn ? <ShieldCheck className="w-6 h-6" /> : <LogIn className="w-6 h-6" />}
-            <span className="text-[10px] font-bold uppercase">{isLoggedIn ? 'Cá nhân' : 'Đăng nhập'}</span>
-          </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 h-full flex flex-col overflow-hidden pb-20 md:pb-0">
-        
+      {/* RIGHT MAIN CONTENT */}
+      <main className="w-full md:w-[90%] h-full flex flex-col overflow-hidden">
+        {/* Firebase Config Warning Banner */}
+        {isConfigWarningVisible && (
+          <div className="bg-amber-50 border-b border-amber-200 p-3 px-8 flex items-center justify-between animate-in slide-in-from-top duration-500">
+            <div className="flex items-center gap-3 text-amber-800 text-sm">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              <div>
+                <span className="font-bold">Yêu cầu cấu hình:</span> Vui lòng cập nhật thông tin Firebase trong file <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">services/firebaseService.ts</code> để đồng bộ dữ liệu Cloud.
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsConfigWarningVisible(false)}
+              className="text-amber-400 hover:text-amber-600 p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Header */}
-        <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 md:px-10 shrink-0 z-40">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 relative">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/20">
-              <Database className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-base md:text-xl font-black text-slate-900 tracking-tight leading-none">TRA CỨU NHÂN SỰ</h1>
-              <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase mt-1 hidden sm:block">Hệ thống quản lý trực quan</p>
-            </div>
+            <h1 className="text-xl font-bold text-slate-800 tracking-tight">Trực quan theo dõi & Tra cứu</h1>
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded uppercase">v2.1.0 Cloud</span>
           </div>
           
-          <div className="flex items-center gap-2 md:gap-6">
-            <div className={`hidden sm:flex items-center gap-2 text-[10px] font-black px-3 py-2 rounded-xl border ${isFirebaseConfigured() ? 'text-blue-600 bg-blue-50 border-blue-100' : 'text-amber-600 bg-amber-50 border-amber-100'}`}>
+          <div className="flex items-center gap-6">
+            <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border ${isFirebaseConfigured() ? 'text-blue-600 bg-blue-50 border-blue-100' : 'text-amber-600 bg-amber-50 border-amber-100'}`}>
               <Cloud className="w-3.5 h-3.5" />
-              <span>{isFirebaseConfigured() ? 'CLOUD SYNC' : 'OFFLINE'}</span>
+              <span>Dữ liệu: {isFirebaseConfigured() ? 'Firebase Cloud' : 'Offline Mode'}</span>
             </div>
 
-            <div className="flex items-center gap-3 border-l pl-4 md:pl-6 border-slate-200">
-              <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl border-2 border-white shadow-md overflow-hidden bg-slate-100 shrink-0">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${isLoggedIn ? 'admin' : 'guest'}`} alt="avatar" />
+            {isLoggedIn && role === UserRole.ADMIN && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full border border-green-100 animate-pulse">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span className="text-xs font-semibold">Quản trị</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3 border-l pl-6 border-slate-200">
+              <div className="flex flex-col items-end">
+                <span className="text-sm font-semibold text-slate-900">{isLoggedIn ? 'Quản trị viên' : 'Khách truy cập'}</span>
+                <span className="text-xs text-slate-500">{isLoggedIn ? 'admin@system.local' : 'guest@viewer.local'}</span>
+              </div>
+              <div className={`w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center ${isLoggedIn ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                <img 
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${isLoggedIn ? 'admin' : 'guest'}`} 
+                  alt="avatar"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
         </header>
 
-        {/* Ticker - More compact for mobile */}
+        {/* Update Notification Ticker */}
         {lastUpdated && (
-          <div className="bg-red-600 h-8 md:h-9 flex items-center overflow-hidden shrink-0 shadow-lg relative z-30">
-            <div className="flex items-center gap-1.5 px-4 bg-red-700 h-full text-white font-black text-[9px] md:text-xs z-10 shadow-2xl whitespace-nowrap">
+          <div className="bg-red-600 h-8 flex items-center overflow-hidden shrink-0 border-y border-red-700">
+            <div className="flex items-center gap-2 px-4 bg-red-700 h-full text-white font-bold text-xs z-10 shadow-lg whitespace-nowrap">
               <Clock className="w-3.5 h-3.5" />
-              <span>LIVE:</span>
+              <span>CẬP NHẬT:</span>
             </div>
             <div className="flex-1 overflow-hidden relative h-full flex items-center">
-              <div className="absolute whitespace-nowrap animate-marquee text-white font-bold text-[10px] md:text-sm flex items-center gap-12 pl-[100%]">
+              <div className="absolute whitespace-nowrap animate-marquee text-white font-medium text-sm flex items-center gap-8 pl-[100%]">
                 <span className="flex items-center gap-2">
-                  Dữ liệu đồng bộ lúc: <span className="underline decoration-2 underline-offset-4">{lastUpdated}</span>
+                  <span className="text-red-200 font-bold">•</span> 
+                  Dữ liệu được cập nhật mới nhất vào lúc: <span className="font-bold underline tracking-wider">{lastUpdated}</span>
                 </span>
-                <span className="opacity-40">|</span>
-                <span>Mọi thay đổi từ Admin sẽ được cập nhật ngay lập tức cho tất cả người dùng</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-red-200 font-bold">•</span> 
+                  Trạng thái: <span className="font-bold">{isFirebaseConfigured() ? 'Đã đồng bộ Cloud' : 'Chế độ Demo (Chưa cấu hình)'}</span>
+                </span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Content Area */}
-        <div className="flex-1 p-4 md:p-10 overflow-y-auto bg-slate-100 no-scrollbar">
+        <div className="flex-1 p-8 overflow-y-auto">
           <style>
             {`
-              @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-160%); } }
-              .animate-marquee { animation: marquee 25s linear infinite; }
-              @media (max-width: 640px) { .animate-marquee { animation-duration: 18s; } }
+              @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-200%); } }
+              .animate-marquee { animation: marquee 35s linear infinite; }
             `}
           </style>
 
           {error && (
-            <div className="mb-6 p-4 bg-white border-l-4 border-red-500 rounded-xl shadow-sm flex items-center gap-3 animate-in fade-in slide-in-from-left duration-300">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-              <p className="text-xs md:text-sm text-slate-700 font-medium">{error}</p>
-              <button onClick={() => setSafeError(null)} className="ml-auto text-slate-400 p-1 hover:text-slate-600"><X className="w-4 h-4" /></button>
+            <div className="mb-6 p-5 bg-red-50 border border-red-200 rounded-2xl shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-red-100 text-red-600 rounded-lg">
+                  <Info className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-red-800 font-bold mb-1">Lỗi hệ thống / Cấu hình</h3>
+                  <p className="text-red-700 text-sm leading-relaxed">{error}</p>
+                  {error.includes("permission-denied") || error.includes("YOUR_API_KEY") ? (
+                    <div className="mt-4 p-4 bg-white border border-red-100 rounded-xl space-y-3">
+                      <p className="text-xs text-slate-600 font-medium uppercase tracking-wider">Hướng dẫn khắc phục:</p>
+                      <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
+                        <li>Truy cập <a href="https://console.firebase.google.com/" target="_blank" className="text-blue-600 font-bold hover:underline inline-flex items-center gap-1">Firebase Console <ExternalLink className="w-3 h-3"/></a></li>
+                        <li>Bật <b>Cloud Firestore API</b> trong mục "APIs & Services".</li>
+                        <li>Tạo Database và đặt Rules: <code className="bg-slate-100 px-1 rounded">allow read, write: if true;</code></li>
+                        <li>Copy cấu hình vào <code className="bg-slate-100 px-1 rounded italic font-mono">services/firebaseService.ts</code></li>
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </div>
           )}
 
           {isLoading ? (
-            <div className="h-full flex flex-col items-center justify-center gap-6 py-20">
-              <div className="relative">
-                <div className="w-14 h-14 border-4 border-blue-100 rounded-full"></div>
-                <div className="w-14 h-14 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-              </div>
-              <p className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest animate-pulse">Đang kết nối Cloud...</p>
+            <div className="h-full flex flex-col items-center justify-center gap-4">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-slate-500 font-medium">Đang kết nối Cloud...</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-6 md:gap-10">
-              {/* Stats - Horizontal scroll on mobile if needed or 2x2 grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-                {[
-                  { label: 'Tổng số', value: totalPeople, icon: Users, color: 'blue' },
-                  { label: 'Hoạt động', value: loggedInCount, icon: UserCheck, color: 'green' },
-                  { label: 'Vắng mặt', value: notLoggedInCount, icon: UserMinus, color: 'amber' },
-                  { label: 'Đơn vị', value: unitCount, icon: Briefcase, color: 'purple' }
-                ].map((stat, i) => (
-                  <div key={i} className="group p-5 md:p-8 bg-white rounded-[2rem] shadow-sm border border-slate-200 flex flex-col items-start gap-4 hover:border-blue-300 transition-all hover:shadow-xl hover:shadow-blue-500/5 cursor-default">
-                    <div className={`p-3 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl shrink-0 shadow-inner group-hover:scale-110 transition-transform`}>
-                      <stat.icon className="w-6 h-6" />
-                    </div>
-                    <div className="w-full">
-                      <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest block">{stat.label}</span>
-                      <div className="text-2xl md:text-4xl font-black text-slate-900 leading-tight mt-1">{stat.value}</div>
-                    </div>
+            <div className="h-full flex flex-col gap-6">
+              {/* Dashboard / Stats Section */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:border-blue-200 transition-colors">
+                  <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <Users className="w-6 h-6" />
                   </div>
-                ))}
+                  <div>
+                    <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Tổng số (Tìm thấy)</span>
+                    <div className="text-2xl font-bold text-slate-900 mt-0.5">{totalPeople}</div>
+                  </div>
+                </div>
+                
+                <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:border-green-200 transition-colors">
+                  <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+                    <UserCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Đã đăng nhập</span>
+                    <div className="text-2xl font-bold text-green-600 mt-0.5">{loggedInCount}</div>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:border-amber-200 transition-colors">
+                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                    <UserMinus className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Chưa đăng nhập</span>
+                    <div className="text-2xl font-bold text-amber-600 mt-0.5">{notLoggedInCount}</div>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:border-purple-200 transition-colors">
+                  <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Số đơn vị</span>
+                    <div className="text-2xl font-bold text-purple-600 mt-0.5">{unitCount}</div>
+                  </div>
+                </div>
               </div>
 
-              {/* Enhanced Table Area */}
               <div className="flex-1 min-h-[500px]">
                 <DataTable 
                   data={filteredRecords} 
@@ -340,65 +381,80 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Desktop Footer */}
-        <footer className="hidden md:flex h-12 px-10 border-t border-slate-200 bg-white items-center justify-between shrink-0">
-          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">
-            VISUAL TRACKING SYSTEM • v2.5.0
+        <footer className="h-10 px-8 border-t border-slate-200 bg-white flex items-center justify-between shrink-0">
+          <p className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">
+            © 2024 Hệ thống quản lý thông tin trực quan • Google Cloud Console required
           </p>
-          <div className="flex gap-6 text-[10px] text-slate-400 font-black">
-            <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div> FIREBASE READY</span>
-            <span>SECURE CLOUD PERSISTENCE</span>
+          <div className="flex gap-4 text-[10px] text-slate-400 font-medium">
+            <span className="hover:text-slate-600 cursor-pointer">Bảo mật</span>
+            <span className="hover:text-slate-600 cursor-pointer">Điều khoản</span>
           </div>
         </footer>
       </main>
 
-      {/* Modern Login Modal */}
+      {/* LOGIN MODAL */}
       {showLoginModal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/80 backdrop-blur-lg p-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in slide-in-from-bottom-10 duration-500">
-            <div className="relative p-8 md:p-12">
-              <button onClick={() => setShowLoginModal(false)} className="absolute top-6 right-6 p-2.5 text-slate-300 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all active:scale-90">
-                <X className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="relative p-8">
+              <button 
+                onClick={() => { setShowLoginModal(false); setLoginError(''); }}
+                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"
+              >
+                <X className="w-5 h-5" />
               </button>
 
-              <div className="flex flex-col items-center mb-10 text-center">
-                <div className="p-5 bg-blue-50 text-blue-600 rounded-3xl mb-6 shadow-inner">
-                  <ShieldAlert className="w-12 h-12" />
+              <div className="flex flex-col items-center mb-8">
+                <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl mb-4">
+                  <ShieldAlert className="w-10 h-10" />
                 </div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Xác thực</h2>
-                <p className="text-slate-400 text-xs md:text-sm mt-2 font-bold uppercase tracking-wider">Quyền quản trị hệ thống</p>
+                <h2 className="text-2xl font-bold text-slate-900">Yêu cầu đăng nhập</h2>
+                <p className="text-slate-500 text-center mt-2">Đăng nhập quyền Admin để đồng bộ dữ liệu Cloud.</p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-5">
-                <div className="space-y-2">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Tên đăng nhập</label>
                   <input 
-                    type="text" required autoFocus
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all shadow-sm"
-                    placeholder="Tài khoản admin"
-                    value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)}
+                    type="text"
+                    required
+                    autoFocus
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                    placeholder="Nhập 'admin'"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Mật khẩu</label>
                   <input 
-                    type="password" required
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all shadow-sm"
-                    placeholder="Mật khẩu"
-                    value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                    placeholder="Nhập 'admin'"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                   />
                 </div>
+
                 {loginError && (
-                  <div className="flex items-center gap-3 text-red-600 text-[11px] font-bold bg-red-50 p-4 rounded-2xl border border-red-100 animate-shake">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-100">
+                    <Info className="w-4 h-4" />
                     <span>{loginError}</span>
                   </div>
                 )}
-                <button type="submit" className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-600/30 transition-all text-sm active:scale-95 uppercase tracking-widest mt-4">
+
+                <button 
+                  type="submit"
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-5 h-5" />
                   Đăng nhập
                 </button>
               </form>
             </div>
-            <div className="bg-slate-50 p-6 text-center border-t border-slate-100">
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest italic">demo: admin / admin</p>
+            <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
+              <p className="text-xs text-slate-400 italic">Gợi ý: admin / admin</p>
             </div>
           </div>
         </div>

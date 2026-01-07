@@ -1,0 +1,5 @@
+{
+  "name": "Visual Tracking & Info Lookup",
+  "description": "A high-performance React application for visualizing and managing employee records from Excel files with admin-only import capabilities.",
+  "requestFramePermissions": []
+}

@@ -82,7 +82,7 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginUsername === 'admin' && loginPassword === 'admin') {
+    if (loginUsername === 'admin' && loginPassword === 'Tuqn@123') {
       setIsLoggedIn(true);
       setRole(UserRole.ADMIN);
       setShowLoginModal(false);
@@ -93,7 +93,9 @@ const App: React.FC = () => {
       setLoginError('Tài khoản hoặc mật khẩu không chính xác.');
     }
   };
-
+// git remote add origin https://github.com/orinbee/stdv14.git
+// git branch -M main
+// git push -u origin main
   const handleLogout = () => {
     setIsLoggedIn(false);
     setRole(UserRole.USER);
